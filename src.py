@@ -11,16 +11,16 @@ class FactorialWeights:
     def __init__(self):
         pass
 
-    def preprocess_data(self, df, cov_cols, treat_cols, outcome, outlier_cutoff = 3.0):
+    def preprocess_data(self, df, treat_cols, cov_cols, outcome, outlier_cutoff = 3.0):
         """
         does z-score normalization of non-binary data and MICE for missing data
 
         Parameters
         ----------
-        cov_cols : list
-            list of cov cols
         treat_cols : list
             list of treatment columns
+        cov_cols : list
+            list of cov cols
         outcome : string
             outcome column name
         outlier_cutoff : double, optional
@@ -97,8 +97,8 @@ class FactorialWeights:
 
         for cov in cov_cols:
             right_val = df[cov].sum()
-            left_val_plus = df['A_plus'] * df[cov].sum()
-            left_val_minus = df['A_minus'] * df[cov].sum()
+            left_val_plus = df['A_plus'] * df[cov]
+            left_val_minus = df['A_minus'] * df[cov]
             constraints.append(cp.multiply(x, left_val_plus).sum() == right_val)
             constraints.append(cp.multiply(x, left_val_minus).sum() == right_val)
 
@@ -112,8 +112,8 @@ class FactorialWeights:
 
         for treat in treat_combos:
             z_val = df[treat].prod(axis = 1)
-            plus_const = df['A_plus'] * z_val * 1/len(df)
-            minus_const = df['A_minus'] * z_val * 1/len(df)
+            plus_const = df['A_plus'] * z_val/len(df)
+            minus_const = df['A_minus'] * z_val/len(df)
             
             plus_res, minus_res = 0, 0
             for j in range(len(z_combos)):
@@ -123,15 +123,15 @@ class FactorialWeights:
                     plus_res += mult
                 if g_value < 0:
                     minus_res += mult
-            
+
             plus_res /= (2**(len(treat_cols) - 1))
             minus_res /= (2**(len(treat_cols) - 1))
             constraints.append(cp.multiply(x, plus_const).sum() == plus_res)
             constraints.append(cp.multiply(x, minus_const).sum() == minus_res)
                 
         prob = cp.Problem(obj, constraints)
-        prob.solve(solver=cp.CLARABEL)
-        return x    
+        prob.solve(verbose = False, solver=cp.CLARABEL)
+        return x.value
             
     def heterogeneous_treat_model(self, df, treat_cols, cov_cols, effects, weighting = 'entropy', intr_effects = 1):
         assert weighting == 'entropy' or weighting == 'variance'
@@ -196,7 +196,7 @@ class FactorialWeights:
     
         prob = cp.Problem(obj, constraints)
         prob.solve(verbose = False, solver=cp.CLARABEL)
-        return x
+        return x.value
 
 
 
