@@ -166,7 +166,7 @@ class FactorialWeights:
         
         #All Unique Z Combos
         z_combos = pd.DataFrame(np.unique(df[treat_cols].values, axis = 0), columns = treat_cols)
-    
+
         for s in range(len(cov_cols)):
             for k in range(len(treat_combos)):
                 cov_col = cov_cols[s]
